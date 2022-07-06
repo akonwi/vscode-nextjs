@@ -1,6 +1,14 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
+const KEYWORDS = [
+  { label: "Get Server Side Props", pattern: "getServerSideProps" },
+  { label: "Get Static Props", pattern: "getStaticProps" },
+  { label: "Get Static Paths", pattern: "getStaticPaths" },
+  { label: "Page Component", pattern: "export default" },
+  { label: "Middlware Config", pattern: "export const config" },
+];
+
 export class NextJsSymbolProvider implements vscode.TreeDataProvider<Entry> {
   private _onDidChangeTreeData: vscode.EventEmitter<void> =
     new vscode.EventEmitter<void>();
@@ -25,23 +33,28 @@ export class NextJsSymbolProvider implements vscode.TreeDataProvider<Entry> {
       return [];
     }
 
-    const results: vscode.TextSearchResult[] = [];
-    await vscode.workspace.findTextInFiles(
-      {
-        pattern: "getServerSideProps",
-        isCaseSensitive: true,
-        isWordMatch: true,
-      },
-      {
-        include: path.relative(
-          this.workspaceRoot,
-          activeTextEditor.document.fileName
-        ),
-      },
-      (result) => results.push(result)
+    const children: Entry[] = [];
+
+    await Promise.all(
+      KEYWORDS.map(({ label, pattern }) => {
+        return vscode.workspace.findTextInFiles(
+          {
+            pattern,
+            isCaseSensitive: true,
+            isWordMatch: true,
+          },
+          {
+            include: path.relative(
+              this.workspaceRoot,
+              activeTextEditor.document.fileName
+            ),
+          },
+          (result) => children.push(new Entry(label, result))
+        );
+      })
     );
 
-    return results.map((r) => new Entry("getServerSideProps", r));
+    return children;
   }
 }
 
