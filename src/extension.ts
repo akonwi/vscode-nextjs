@@ -12,12 +12,17 @@ export function activate(context: vscode.ExtensionContext) {
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
       : undefined;
 
-  const disposable = vscode.window.registerTreeDataProvider(
-    "nextJsLib",
-    new NextJsSymbolProvider(rootPath)
+  const nextJsSymbolProvider = new NextJsSymbolProvider(rootPath);
+
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider("nextJsLib", nextJsSymbolProvider)
   );
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((_textEditor) =>
+      nextJsSymbolProvider.refresh()
+    )
+  );
 }
 
 // this method is called when your extension is deactivated
